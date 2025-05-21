@@ -156,7 +156,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const getTestsForStudent = (studentId: string) => {
     // Find all groups that contain this student
     const studentGroups = groups.filter(group => 
-      group.students.some(student => student.id === studentId)
+      Array.isArray(group.students) && group.students.some(student => student.id === studentId)
     );
     
     // Get all tests assigned to these groups
@@ -181,7 +181,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getStudentsInGroup = (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
-    if (!group) return [];
+    if (!group || !Array.isArray(group.students)) return [];
     
     return users.filter(u => 
       u.role === 'student' && 
