@@ -12,10 +12,33 @@ enum TabType {
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { getTestsForStudent, getResultsForStudent } = useData();
+  const { getTestsForStudent, getResultsForStudent, groups } = useData();
   const [activeTab, setActiveTab] = useState<TabType>(TabType.AVAILABLE_TESTS);
 
   if (!user || user.role !== 'student') return null;
+
+  // Проверяем, состоит ли студент в какой-либо группе
+  const studentGroup = groups.find(group => 
+    group.students.some(student => 
+      student.fullName.toLowerCase() === user.fullName.toLowerCase() &&
+      group.institution.toLowerCase() === user.institution.toLowerCase() &&
+      group.groupNumber === user.groupNumber
+    )
+  );
+
+  if (!studentGroup) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="text-center py-12">
+          <FileText size={48} className="mx-auto text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Вы не состоите ни в одной группе</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Дождитесь, пока преподаватель создаст вашу группу.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const studentResults = getResultsForStudent(user.id);
   const completedTestIds = studentResults.map(result => result.testId);
