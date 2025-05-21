@@ -359,7 +359,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
                             <span className="text-sm font-medium text-gray-800">
-                              {group.name}
+                              Группа {group.groupNumber} - {group.specialty}
                             </span>
                           </label>
                         </li>
