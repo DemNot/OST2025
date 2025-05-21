@@ -72,7 +72,7 @@ const GroupList: React.FC<GroupListProps> = ({ groups }) => {
         <div className="overflow-hidden bg-white shadow sm:rounded-md">
           <ul className="divide-y divide-gray-200">
             {groups.map((group) => {
-              const students = getStudentsInGroup(group.id);
+              const students = group.students || [];
               return (
                 <li key={group.id}>
                   <div className="block hover:bg-gray-50">
