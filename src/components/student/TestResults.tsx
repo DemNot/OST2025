@@ -10,6 +10,8 @@ interface TestResultsProps {
 const TestResults: React.FC<TestResultsProps> = ({ test, result }) => {
   const percentage = (result.score / result.maxScore) * 100;
   const completedDate = new Date(result.completedAt);
+  const startDate = new Date(test.startDate);
+  const endDate = new Date(test.endDate);
   
   let gradeLabel: string;
   let gradeColor: string;
@@ -49,10 +51,18 @@ const TestResults: React.FC<TestResultsProps> = ({ test, result }) => {
           </div>
         </div>
         
-        <div className="mt-4 flex justify-between items-center">
+        <div className="mt-4 space-y-2">
           <div className="flex items-center text-sm text-gray-500">
             <Calendar size={16} className="mr-1" />
-            Завершено: {completedDate.toLocaleDateString()}
+            Начало теста: {startDate.toLocaleString('ru-RU')}
+          </div>
+          <div className="flex items-center text-sm text-gray-500">
+            <Calendar size={16} className="mr-1" />
+            Окончание теста: {endDate.toLocaleString('ru-RU')}
+          </div>
+          <div className="flex items-center text-sm text-gray-500">
+            <Calendar size={16} className="mr-1" />
+            Завершено: {completedDate.toLocaleString('ru-RU')}
           </div>
           <div className="text-sm font-medium">
             Баллы: {result.score}/{result.maxScore}
