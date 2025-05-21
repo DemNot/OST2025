@@ -9,7 +9,7 @@ interface DataContextType {
   users: User[];
   
   // Group actions
-  createGroup: (name: string, studentIds: string[]) => void;
+  createGroup: (groupNumber: string, specialty: string, institution: string, students: Array<{ id: string; fullName: string }>) => void;
   updateGroup: (group: Group) => void;
   deleteGroup: (groupId: string) => void;
   
@@ -75,64 +75,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [groups, tests, results, users, isLoading]);
 
   // Group actions
-  const createGroup = (name: string, studentIds: string[]) => {
+  const createGroup = (groupNumber: string, specialty: string, institution: string, students: Array<{ id: string; fullName: string }>) => {
     if (!user || user.role !== 'teacher') return;
     
     const newGroup: Group = {
       id: Date.now().toString(),
-      name,
+      groupNumber,
+      specialty,
+      institution,
       teacherId: user.id,
-      students: studentIds,
+      students,
       createdAt: new Date().toISOString(),
     };
     
     setGroups([...groups, newGroup]);
-    
-    // Update student records to include this group
-    const updatedUsers = users.map(u => {
-      if (u.role === 'student' && studentIds.includes(u.id)) {
-        return {
-          ...u,
-          groups: [...(u.groups || []), newGroup.id]
-        };
-      }
-      return u;
-    });
-    
-    setUsers(updatedUsers);
   };
 
   const updateGroup = (updatedGroup: Group) => {
     if (!user || user.role !== 'teacher' || updatedGroup.teacherId !== user.id) return;
     
     setGroups(groups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-    
-    // Update student records
-    const oldGroup = groups.find(g => g.id === updatedGroup.id);
-    if (oldGroup) {
-      const removedStudents = oldGroup.students.filter(id => !updatedGroup.students.includes(id));
-      const addedStudents = updatedGroup.students.filter(id => !oldGroup.students.includes(id));
-      
-      const updatedUsers = users.map(u => {
-        if (u.role === 'student') {
-          if (removedStudents.includes(u.id)) {
-            return {
-              ...u,
-              groups: (u.groups || []).filter(gId => gId !== updatedGroup.id)
-            };
-          }
-          if (addedStudents.includes(u.id)) {
-            return {
-              ...u,
-              groups: [...(u.groups || []), updatedGroup.id]
-            };
-          }
-        }
-        return u;
-      });
-      
-      setUsers(updatedUsers);
-    }
   };
 
   const deleteGroup = (groupId: string) => {
@@ -141,26 +103,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setGroups(groups.filter(g => g.id !== groupId));
     
-    // Update student records
-    const updatedUsers = users.map(u => {
-      if (u.role === 'student' && (u.groups || []).includes(groupId)) {
-        return {
-          ...u,
-          groups: (u.groups || []).filter(gId => gId !== groupId)
-        };
-      }
-      return u;
-    });
-    
-    setUsers(updatedUsers);
-    
-    // Also delete tests associated with this group
+    // Delete tests associated with this group
     const testsToDelete = tests.filter(t => t.groupIds.includes(groupId));
     if (testsToDelete.length > 0) {
       const testIdsToDelete = testsToDelete.map(t => t.id);
       setTests(tests.filter(t => !testIdsToDelete.includes(t.id)));
-      
-      // Remove results for those tests
       setResults(results.filter(r => !testIdsToDelete.includes(r.testId)));
     }
   };
@@ -189,8 +136,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user || !test || user.role !== 'teacher' || test.teacherId !== user.id) return;
     
     setTests(tests.filter(t => t.id !== testId));
-    
-    // Delete associated results
     setResults(results.filter(r => r.testId !== testId));
   };
 
@@ -209,12 +154,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Utility functions
   const getTestsForStudent = (studentId: string) => {
-    const studentGroups = users
-      .find(u => u.id === studentId && u.role === 'student')
-      ?.groups || [];
-      
+    // Find all groups that contain this student
+    const studentGroups = groups.filter(group => 
+      group.students.some(student => student.id === studentId)
+    );
+    
+    // Get all tests assigned to these groups
     return tests.filter(test => 
-      test.groupIds.some(groupId => studentGroups.includes(groupId))
+      test.groupIds.some(groupId => 
+        studentGroups.some(group => group.id === groupId)
+      )
     );
   };
 
@@ -234,7 +183,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const group = groups.find(g => g.id === groupId);
     if (!group) return [];
     
-    return users.filter(u => u.role === 'student' && group.students.includes(u.id));
+    return users.filter(u => 
+      u.role === 'student' && 
+      group.students.some(student => student.id === u.id)
+    );
   };
 
   return (
@@ -265,7 +217,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useData = () => {
   const context = useContext(DataContext);
   if (context === undefined) {
-    throw new Error('useData must be used within a DataProvider');
+    throw new Error('useData должен использоваться внутри DataProvider');
   }
   return context;
 };

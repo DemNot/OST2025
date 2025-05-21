@@ -12,7 +12,7 @@ enum TabType {
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { getTestsForStudent, getResultsForStudent, tests } = useData();
+  const { getTestsForStudent, getResultsForStudent } = useData();
   const [activeTab, setActiveTab] = useState<TabType>(TabType.AVAILABLE_TESTS);
 
   if (!user || user.role !== 'student') return null;
@@ -20,11 +20,9 @@ const StudentDashboard: React.FC = () => {
   const studentResults = getResultsForStudent(user.id);
   const completedTestIds = studentResults.map(result => result.testId);
   
-  const availableTests = getTestsForStudent(user.id)
-    .filter(test => !completedTestIds.includes(test.id));
-    
-  const completedTests = tests
-    .filter(test => completedTestIds.includes(test.id));
+  const allTests = getTestsForStudent(user.id);
+  const availableTests = allTests.filter(test => !completedTestIds.includes(test.id));
+  const completedTests = allTests.filter(test => completedTestIds.includes(test.id));
 
   return (
     <div className="bg-white shadow rounded-lg overflow-hidden">
