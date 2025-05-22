@@ -34,6 +34,38 @@ async function connectDB() {
 
 connectDB();
 
+// Базовый маршрут для проверки работы сервера
+app.get('/', (req, res) => {
+  res.json({ message: 'API is working' });
+});
+
+// Получение всех пользователей
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.request().query('SELECT * FROM Users');
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Получение пользователя по ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const result = await pool.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .query('SELECT * FROM Users WHERE id = @id');
+    
+    if (result.recordset.length > 0) {
+      res.json(result.recordset[0]);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Аутентификация
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -96,6 +128,39 @@ app.post('/api/auth/register', async (req, res) => {
     res.json(result.recordset[0]);
   } catch (err) {
     console.error('Registration error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Обновление профиля пользователя
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { fullName, email, institution, groupNumber, photoUrl } = req.body;
+    
+    const result = await pool.request()
+      .input('id', sql.UniqueIdentifier, req.params.id)
+      .input('fullName', sql.NVarChar, fullName)
+      .input('email', sql.NVarChar, email)
+      .input('institution', sql.NVarChar, institution)
+      .input('groupNumber', sql.NVarChar, groupNumber)
+      .input('photoUrl', sql.NVarChar, photoUrl)
+      .query(`
+        UPDATE Users 
+        SET fullName = @fullName,
+            email = @email,
+            institution = @institution,
+            groupNumber = @groupNumber,
+            photoUrl = @photoUrl
+        OUTPUT INSERTED.*
+        WHERE id = @id
+      `);
+
+    if (result.recordset.length > 0) {
+      res.json(result.recordset[0]);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });

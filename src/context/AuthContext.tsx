@@ -7,7 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string, role: UserRole) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole, institution: string, groupNumber: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (updatedUser: User) => void;
+  updateProfile: (updatedUser: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!response.ok) {
-        throw new Error('Неверные учетные данные или пользователь не найден');
+        throw new Error('Invalid credentials');
       }
 
       const userData = await response.json();
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Ошибка регистрации');
+        throw new Error(error.message || 'Registration failed');
       }
 
       const userData = await response.json();
@@ -97,8 +97,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateProfile = async (updatedUser: User) => {
     try {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      const response = await fetch(`${API_URL}/users/${updatedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedUser),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      const userData = await response.json();
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
