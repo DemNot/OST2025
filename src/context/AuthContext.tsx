@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { User, UserRole } from '../types';
 
 interface AuthContextType {
@@ -13,14 +12,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key are required. Please check your environment variables.');
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Helper function to hash password (simple for demo purposes)
+const hashPassword = (password: string): string => {
+  return btoa(password); // This is NOT secure, just for demo
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -37,32 +32,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const hashedPassword = hashPassword(password);
+      const foundUser = users.find((u: User & { password: string }) => 
+        u.email === email && 
+        u.password === hashedPassword && 
+        u.role === role
+      );
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (!data.user) {
-        throw new Error('No user data returned');
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .eq('role', role)
-        .single();
-
-      if (userError) {
+      if (!foundUser) {
         throw new Error('Invalid credentials or user not found');
       }
 
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      const { password: _, ...userWithoutPassword } = foundUser;
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      setUser(userWithoutPassword);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -74,40 +58,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, role: UserRole, institution: string, groupNumber: string) => {
     setIsLoading(true);
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      if (users.some((u: User) => u.email === email)) {
+        throw new Error('User with this email already exists');
+      }
+
+      const newUser = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        fullName: name,
         email,
-        password
-      });
+        password: hashPassword(password),
+        role,
+        institution,
+        groupNumber: role === 'student' ? groupNumber : null
+      };
 
-      if (authError) {
-        throw new Error(authError.message);
-      }
+      users.push(newUser);
+      localStorage.setItem('users', JSON.stringify(users));
 
-      if (!authData.user) {
-        throw new Error('No user data returned');
-      }
-
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: authData.user.id,
-            fullName: name,
-            email,
-            role,
-            institution,
-            groupNumber: role === 'student' ? groupNumber : null
-          }
-        ])
-        .select()
-        .single();
-
-      if (userError) {
-        throw new Error('Error creating user profile');
-      }
-
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      const { password: _, ...userWithoutPassword } = newUser;
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      setUser(userWithoutPassword);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -116,27 +88,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
     localStorage.removeItem('user');
     setUser(null);
   };
 
   const updateProfile = async (updatedUser: User) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .update(updatedUser)
-        .eq('id', updatedUser.id)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map((u: User & { password: string }) => 
+        u.id === updatedUser.id ? { ...u, ...updatedUser } : u
+      );
+      
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;

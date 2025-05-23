@@ -5,8 +5,8 @@ export interface User {
   fullName: string;
   email: string;
   role: UserRole;
-  photoUrl?: string;
   institution: string;
+  groupNumber?: string;
 }
 
 export interface Teacher extends User {
