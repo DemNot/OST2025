@@ -31,18 +31,25 @@ const config = {
   }
 };
 
-let pool;
+let pool = null;
 
 async function connectDB() {
   try {
     // Close existing pool if it exists
     if (pool) {
       await pool.close();
+      pool = null;
     }
     
-    // Create new pool with updated configuration
+    // Create new pool
     pool = await new sql.ConnectionPool(config).connect();
     console.log('Connected to SQL Server successfully');
+    
+    // Handle pool errors
+    pool.on('error', async err => {
+      console.error('Database pool error:', err);
+      await connectDB();
+    });
   } catch (err) {
     console.error('Database connection failed:', err);
     // Add a delay before retrying
@@ -50,6 +57,7 @@ async function connectDB() {
   }
 }
 
+// Initial connection
 connectDB();
 
 app.get('/', (req, res) => {
@@ -58,6 +66,9 @@ app.get('/', (req, res) => {
 
 app.get('/api/users', async (req, res) => {
   try {
+    if (!pool) {
+      throw new Error('Database connection not established');
+    }
     const result = await pool.request().query('SELECT * FROM Users');
     res.json(result.recordset);
   } catch (err) {
@@ -67,6 +78,9 @@ app.get('/api/users', async (req, res) => {
 
 app.get('/api/users/:id', async (req, res) => {
   try {
+    if (!pool) {
+      throw new Error('Database connection not established');
+    }
     const result = await pool.request()
       .input('id', sql.UniqueIdentifier, req.params.id)
       .query('SELECT * FROM Users WHERE id = @id');
@@ -83,6 +97,9 @@ app.get('/api/users/:id', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
+    if (!pool) {
+      throw new Error('Database connection not established');
+    }
     const { email, password, role } = req.body;
     
     const result = await pool.request()
@@ -103,6 +120,9 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/register', async (req, res) => {
   try {
+    if (!pool) {
+      throw new Error('Database connection not established');
+    }
     const { fullName, email, password, role, institution, groupNumber } = req.body;
 
     // Проверяем существование пользователя
@@ -150,6 +170,9 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.put('/api/users/:id', async (req, res) => {
   try {
+    if (!pool) {
+      throw new Error('Database connection not established');
+    }
     const { fullName, email, institution, groupNumber, photoUrl } = req.body;
     
     const result = await pool.request()
