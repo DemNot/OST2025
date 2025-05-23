@@ -20,9 +20,14 @@ const config = {
   server: process.env.DB_SERVER,
   database: process.env.DB_NAME,
   options: {
-    encrypt: false,
+    encrypt: true,
     trustServerCertificate: true,
-    instanceName: 'dimas'
+    instanceName: process.env.DB_INSTANCE_NAME || 'dimas'
+  },
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
   }
 };
 
@@ -30,10 +35,18 @@ let pool;
 
 async function connectDB() {
   try {
-    pool = await sql.connect(config);
+    // Close existing pool if it exists
+    if (pool) {
+      await pool.close();
+    }
+    
+    // Create new pool with updated configuration
+    pool = await new sql.ConnectionPool(config).connect();
     console.log('Connected to SQL Server successfully');
   } catch (err) {
     console.error('Database connection failed:', err);
+    // Add a delay before retrying
+    setTimeout(connectDB, 5000);
   }
 }
 
