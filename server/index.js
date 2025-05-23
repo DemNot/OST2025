@@ -7,9 +7,9 @@ dotenv.config();
 
 const app = express();
 
-// Update CORS configuration to explicitly allow the frontend origin
+// Update CORS configuration to handle both HTTP and HTTPS
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://localhost:5173'],
+  origin: true, // This allows all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

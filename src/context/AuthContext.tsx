@@ -12,10 +12,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Update API_URL to use the correct protocol
-const API_URL = window.location.protocol === 'https:' 
-  ? 'https://localhost:3000/api'
-  : 'http://localhost:3000/api';
+// Update API_URL to always use HTTP for local development
+const API_URL = 'http://localhost:3000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
