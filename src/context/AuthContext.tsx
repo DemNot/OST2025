@@ -7,36 +7,31 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<void>;
   register: (name: string, email: string, password: string, role: UserRole, institution: string, groupNumber: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   updateProfile: (updatedUser: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL and Anon Key are required. Please check your environment variables.');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session
-    const session = supabase.auth.getSession();
-    setUser(session ? (session as any).user as User : null);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
     setIsLoading(false);
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session ? (session.user as User) : null);
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const login = async (email: string, password: string, role: UserRole) => {
@@ -47,25 +42,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Fetch additional user data from the profiles table
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) throw profileError;
-
-        if (profile.role !== role) {
-          await logout();
-          throw new Error('Invalid role for this user');
-        }
-
-        setUser({ ...data.user, ...profile });
+      if (error) {
+        throw new Error(error.message);
       }
+
+      if (!data.user) {
+        throw new Error('No user data returned');
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .eq('role', role)
+        .single();
+
+      if (userError) {
+        throw new Error('Invalid credentials or user not found');
+      }
+
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -77,37 +74,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, role: UserRole, institution: string, groupNumber: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        password,
+        password
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        // Create profile record
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              full_name: name,
-              role,
-              institution,
-              group_number: groupNumber,
-            }
-          ]);
-
-        if (profileError) throw profileError;
-
-        setUser({
-          ...data.user,
-          fullName: name,
-          role,
-          institution,
-          groupNumber,
-        } as User);
+      if (authError) {
+        throw new Error(authError.message);
       }
+
+      if (!authData.user) {
+        throw new Error('No user data returned');
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authData.user.id,
+            fullName: name,
+            email,
+            role,
+            institution,
+            groupNumber: role === 'student' ? groupNumber : null
+          }
+        ])
+        .select()
+        .single();
+
+      if (userError) {
+        throw new Error('Error creating user profile');
+      }
+
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -117,25 +117,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await supabase.auth.signOut();
+    localStorage.removeItem('user');
     setUser(null);
   };
 
   const updateProfile = async (updatedUser: User) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: updatedUser.fullName,
-          institution: updatedUser.institution,
-          group_number: updatedUser.groupNumber,
-        })
-        .eq('id', updatedUser.id);
+      const { data, error } = await supabase
+        .from('users')
+        .update(updatedUser)
+        .eq('id', updatedUser.id)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(data));
+      setUser(data);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
