@@ -12,7 +12,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = 'http://localhost:3000/api';
+// Update API_URL to use the correct protocol
+const API_URL = window.location.protocol === 'https:' 
+  ? 'https://localhost:3000/api'
+  : 'http://localhost:3000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -35,11 +38,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email, password, role }),
       });
 
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Invalid credentials');
       }
 
       const userData = await response.json();
@@ -63,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           fullName: name,
           email,
@@ -102,11 +108,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(updatedUser),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update profile');
       }
 
       const userData = await response.json();
