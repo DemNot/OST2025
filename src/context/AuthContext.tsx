@@ -64,6 +64,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User with this email already exists');
       }
 
+      // If registering as a student, check if they're in a group
+      if (role === 'student') {
+        const groups = JSON.parse(localStorage.getItem('edutest_groups') || '[]');
+        const studentInGroup = groups.some(group => 
+          group.students.some(student => 
+            student.fullName.toLowerCase() === name.toLowerCase() &&
+            group.institution.toLowerCase() === institution.toLowerCase() &&
+            group.groupNumber === groupNumber
+          )
+        );
+
+        if (!studentInGroup) {
+          throw new Error('Вы не можете зарегистрироваться, так как преподаватель еще не добавил вас в группу. Пожалуйста, обратитесь к преподавателю.');
+        }
+      }
+
       const newUser = {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         fullName: name,
@@ -71,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: hashPassword(password),
         role,
         institution,
-        groupNumber: role === 'student' ? groupNumber : null
+        groupNumber: role === 'student' ? groupNumber : undefined
       };
 
       users.push(newUser);
