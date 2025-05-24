@@ -154,22 +154,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Utility functions
   const getTestsForStudent = (studentId: string) => {
-    const user = users.find(u => u.id === studentId);
-    if (!user || user.role !== 'student') return [];
+    const studentUser = users.find(u => u.id === studentId);
+    if (!studentUser || studentUser.role !== 'student') return [];
 
-    // Находим группу студента
-    const studentGroup = groups.find(group => 
+    // Find all groups where the student is a member
+    const studentGroups = groups.filter(group => 
       group.students.some(student => 
-        student.fullName.toLowerCase() === user.fullName.toLowerCase() &&
-        group.institution.toLowerCase() === user.institution.toLowerCase() &&
-        group.groupNumber === user.groupNumber
+        student.fullName.toLowerCase() === studentUser.fullName.toLowerCase() &&
+        group.institution.toLowerCase() === studentUser.institution.toLowerCase() &&
+        group.groupNumber === studentUser.groupNumber
       )
     );
 
-    if (!studentGroup) return [];
+    if (studentGroups.length === 0) return [];
 
-    // Возвращаем все тесты, назначенные группе студента
-    return tests.filter(test => test.groupIds.includes(studentGroup.id));
+    // Get all tests assigned to any of the student's groups
+    const studentGroupIds = studentGroups.map(group => group.id);
+    return tests.filter(test => 
+      test.groupIds.some(groupId => studentGroupIds.includes(groupId))
+    );
   };
 
   const getGroupsForTeacher = (teacherId: string) => {
