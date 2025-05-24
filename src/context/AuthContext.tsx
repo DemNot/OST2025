@@ -12,9 +12,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper function to hash password (simple for demo purposes)
 const hashPassword = (password: string): string => {
-  return btoa(password); // This is NOT secure, just for demo
+  return btoa(password);
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -64,13 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User with this email already exists');
       }
 
-      // If registering as a student, check if they're in a group
       if (role === 'student') {
         const groups = JSON.parse(localStorage.getItem('edutest_groups') || '[]');
         const studentInGroup = groups.some(group => 
           group.students.some(student => 
-            student.fullName.toLowerCase() === name.toLowerCase() &&
-            group.institution.toLowerCase() === institution.toLowerCase() &&
+            student.fullName.toLowerCase().trim() === name.toLowerCase().trim() &&
+            group.institution.toLowerCase().trim() === institution.toLowerCase().trim() &&
             group.groupNumber === groupNumber
           )
         );

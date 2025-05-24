@@ -8,20 +8,16 @@ interface DataContextType {
   results: TestResult[];
   users: User[];
   
-  // Group actions
   createGroup: (groupNumber: string, specialty: string, institution: string, students: Array<{ id: string; fullName: string }>) => void;
   updateGroup: (group: Group) => void;
   deleteGroup: (groupId: string) => void;
   
-  // Test actions
   createTest: (test: Omit<Test, 'id' | 'createdAt'>) => void;
   updateTest: (test: Test) => void;
   deleteTest: (testId: string) => void;
   
-  // Result actions
   submitTestResult: (result: Omit<TestResult, 'id' | 'completedAt'>) => void;
   
-  // Utility functions
   getTestsForStudent: (studentId: string) => Test[];
   getGroupsForTeacher: (teacherId: string) => Group[];
   getResultsForTest: (testId: string) => TestResult[];
@@ -30,11 +26,10 @@ interface DataContextType {
   isLoading: boolean;
 }
 
-// Storage keys
 const GROUPS_KEY = 'edutest_groups';
 const TESTS_KEY = 'edutest_tests';
 const RESULTS_KEY = 'edutest_results';
-const USERS_KEY = 'edutest_users';
+const USERS_KEY = 'users';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -46,22 +41,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage on mount
+  // Clear all stored data
   useEffect(() => {
-    const loadData = () => {
-      const storedGroups = localStorage.getItem(GROUPS_KEY);
-      const storedTests = localStorage.getItem(TESTS_KEY);
-      const storedResults = localStorage.getItem(RESULTS_KEY);
-      const storedUsers = localStorage.getItem(USERS_KEY);
-      
-      setGroups(storedGroups ? JSON.parse(storedGroups) : []);
-      setTests(storedTests ? JSON.parse(storedTests) : []);
-      setResults(storedResults ? JSON.parse(storedResults) : []);
-      setUsers(storedUsers ? JSON.parse(storedUsers) : []);
-      setIsLoading(false);
-    };
+    localStorage.removeItem(GROUPS_KEY);
+    localStorage.removeItem(TESTS_KEY);
+    localStorage.removeItem(RESULTS_KEY);
+    localStorage.removeItem(USERS_KEY);
+    localStorage.removeItem('user');
     
-    loadData();
+    setGroups([]);
+    setTests([]);
+    setResults([]);
+    setUsers([]);
+    setIsLoading(false);
   }, []);
 
   // Save data to localStorage whenever it changes
@@ -74,7 +66,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [groups, tests, results, users, isLoading]);
 
-  // Group actions
   const createGroup = (groupNumber: string, specialty: string, institution: string, students: Array<{ id: string; fullName: string }>) => {
     if (!user || user.role !== 'teacher') return;
     
@@ -103,7 +94,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setGroups(groups.filter(g => g.id !== groupId));
     
-    // Delete tests associated with this group
     const testsToDelete = tests.filter(t => t.groupIds.includes(groupId));
     if (testsToDelete.length > 0) {
       const testIdsToDelete = testsToDelete.map(t => t.id);
@@ -112,7 +102,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Test actions
   const createTest = (testData: Omit<Test, 'id' | 'createdAt'>) => {
     if (!user || user.role !== 'teacher') return;
     
@@ -139,7 +128,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setResults(results.filter(r => r.testId !== testId));
   };
 
-  // Result actions
   const submitTestResult = (resultData: Omit<TestResult, 'id' | 'completedAt'>) => {
     if (!user || user.role !== 'student') return;
     
@@ -152,21 +140,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setResults([...results, newResult]);
   };
 
-  // Utility functions
   const getTestsForStudent = (studentId: string) => {
     const studentUser = users.find(u => u.id === studentId);
     if (!studentUser || studentUser.role !== 'student') return [];
 
-    // Find all groups where the student is a member
     const studentGroups = groups.filter(group => 
       group.students.some(student => 
-        student.fullName.toLowerCase().trim() === studentUser.fullName.toLowerCase().trim()
+        student.fullName.toLowerCase().trim() === studentUser.fullName.toLowerCase().trim() &&
+        group.institution.toLowerCase().trim() === studentUser.institution.toLowerCase().trim() &&
+        group.groupNumber === studentUser.groupNumber
       )
     );
 
-    if (studentGroups.length === 0) return [];
-
-    // Get all tests assigned to any of the student's groups
     const studentGroupIds = studentGroups.map(group => group.id);
     return tests.filter(test => 
       test.groupIds.some(groupId => studentGroupIds.includes(groupId))
@@ -191,7 +176,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     return users.filter(u => 
       u.role === 'student' && 
-      group.students.some(student => student.id === u.id)
+      group.students.some(student => 
+        student.fullName.toLowerCase().trim() === u.fullName.toLowerCase().trim() &&
+        u.institution.toLowerCase().trim() === group.institution.toLowerCase().trim() &&
+        u.groupNumber === group.groupNumber
+      )
     );
   };
 
