@@ -157,13 +157,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const studentUser = users.find(u => u.id === studentId);
     if (!studentUser || studentUser.role !== 'student') return [];
 
-    // Find all groups where the student is a member
+    // Find all groups where the student is a member by checking the students array in each group
     const studentGroups = groups.filter(group => 
-      group.students.some(student => 
-        student.fullName.toLowerCase() === studentUser.fullName.toLowerCase() &&
-        group.institution.toLowerCase() === studentUser.institution.toLowerCase() &&
-        group.groupNumber === studentUser.groupNumber
-      )
+      group.students.some(student => student.fullName === studentUser.fullName)
     );
 
     if (studentGroups.length === 0) return [];
