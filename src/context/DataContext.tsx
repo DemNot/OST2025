@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Group, Test, TestResult, User } from '../types';
 import { useAuth } from './AuthContext';
 
@@ -41,18 +41,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Clear all stored data
+  // Load data from localStorage on mount
   useEffect(() => {
-    localStorage.removeItem(GROUPS_KEY);
-    localStorage.removeItem(TESTS_KEY);
-    localStorage.removeItem(RESULTS_KEY);
-    localStorage.removeItem(USERS_KEY);
-    localStorage.removeItem('user');
+    const loadedGroups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
+    const loadedTests = JSON.parse(localStorage.getItem(TESTS_KEY) || '[]');
+    const loadedResults = JSON.parse(localStorage.getItem(RESULTS_KEY) || '[]');
+    const loadedUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
     
-    setGroups([]);
-    setTests([]);
-    setResults([]);
-    setUsers([]);
+    setGroups(loadedGroups);
+    setTests(loadedTests);
+    setResults(loadedResults);
+    setUsers(loadedUsers);
     setIsLoading(false);
   }, []);
 

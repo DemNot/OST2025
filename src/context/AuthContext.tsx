@@ -85,7 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: hashPassword(password),
         role,
         institution,
-        groupNumber: role === 'student' ? groupNumber : undefined
+        groupNumber: role === 'student' ? groupNumber : undefined,
+        photoUrl: undefined
       };
 
       users.push(newUser);
@@ -110,8 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (updatedUser: User) => {
     try {
       const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const currentUser = users.find((u: User) => u.id === updatedUser.id);
+      
+      if (!currentUser) {
+        throw new Error('User not found');
+      }
+
       const updatedUsers = users.map((u: User & { password: string }) => 
-        u.id === updatedUser.id ? { ...u, ...updatedUser } : u
+        u.id === updatedUser.id ? { ...u, ...updatedUser, password: u.password } : u
       );
       
       localStorage.setItem('users', JSON.stringify(updatedUsers));
