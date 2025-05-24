@@ -44,6 +44,11 @@ CREATE TABLE Tests (
     questions NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (teacherId) REFERENCES Users(id)
+  ALTER TABLE Tests
+ADD group_id UNIQUEIDENTIFIER NOT NULL
+    FOREIGN KEY REFERENCES Groups(id);
+ALTER TABLE Tests ENABLE ROW LEVEL SECURITY;
+
 );
 
 -- Связь между тестами и группами
@@ -66,4 +71,15 @@ CREATE TABLE TestResults (
     completedAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (testId) REFERENCES Tests(id),
     FOREIGN KEY (studentId) REFERENCES Users(id)
+);
+CREATE POLICY "Students can view tests of their group"
+ON Tests
+FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1
+    FROM GroupStudents
+    WHERE GroupStudents.studentId = auth.uid()
+      AND GroupStudents.groupId = Tests.group_id
+  )
 );
