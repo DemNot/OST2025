@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, Save } from 'lucide-react';
 
 interface UserProfileProps {
   onClose: () => void;
@@ -9,6 +9,12 @@ interface UserProfileProps {
 const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   const { user, updateProfile } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState({
+    fullName: user?.fullName || '',
+    email: user?.email || '',
+    institution: user?.institution || '',
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatName = (fullName: string) => {
@@ -38,6 +44,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     } catch (error) {
       console.error('Error uploading photo:', error);
       setIsUploading(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user) return;
+
+    try {
+      await updateProfile({
+        ...user,
+        ...editedData
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
     }
   };
 
@@ -88,33 +108,100 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
             </div>
             
             <div className="mt-6 w-full space-y-4">
-              <div className="text-center">
-                <h3 className="text-xl font-medium text-gray-900">{formatName(user.fullName)}</h3>
-                <p className="mt-1 text-sm font-medium text-indigo-600">
-                  {user.role === 'teacher' ? 'Преподаватель' : 'Студент'}
-                </p>
-              </div>
-
-              <div className="border-t border-gray-200 pt-4">
-                <dl className="space-y-4">
+              {isEditing ? (
+                <div className="space-y-4">
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Email</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
+                    <label className="block text-sm font-medium text-gray-700">ФИО</label>
+                    <input
+                      type="text"
+                      value={editedData.fullName}
+                      onChange={(e) => setEditedData({ ...editedData, fullName: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      value={editedData.email}
+                      onChange={(e) => setEditedData({ ...editedData, email: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Учебное заведение</label>
+                    <input
+                      type="text"
+                      value={editedData.institution}
+                      onChange={(e) => setEditedData({ ...editedData, institution: e.target.value })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3 mt-4">
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      onClick={handleSaveChanges}
+                      className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                      <Save size={16} className="inline-block mr-2" />
+                      Сохранить
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center">
+                    <h3 className="text-xl font-medium text-gray-900">{formatName(user.fullName)}</h3>
+                    <p className="mt-1 text-sm font-medium text-indigo-600">
+                      {user.role === 'teacher' ? 'Преподаватель' : 'Студент'}
+                    </p>
                   </div>
 
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Учебное заведение</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{user.institution}</dd>
+                  <div className="border-t border-gray-200 pt-4">
+                    <dl className="space-y-4">
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">Email</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
+                      </div>
+
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500">Учебное заведение</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{user.institution}</dd>
+                      </div>
+
+                      {user.role === 'student' && (
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Номер группы</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{user.groupNumber}</dd>
+                        </div>
+                      )}
+                    </dl>
                   </div>
 
-                  {user.role === 'student' && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Номер группы</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{user.groupNumber}</dd>
+                  {user.role === 'teacher' && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          setEditedData({
+                            fullName: user.fullName,
+                            email: user.email,
+                            institution: user.institution,
+                          });
+                          setIsEditing(true);
+                        }}
+                        className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700"
+                      >
+                        Редактировать профиль
+                      </button>
                     </div>
                   )}
-                </dl>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
