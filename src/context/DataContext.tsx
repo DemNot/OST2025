@@ -29,7 +29,7 @@ interface DataContextType {
 const GROUPS_KEY = 'edutest_groups';
 const TESTS_KEY = 'edutest_tests';
 const RESULTS_KEY = 'edutest_results';
-const USERS_KEY = 'users';
+const USERS_KEY = 'edutest_users';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -41,7 +41,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load data from localStorage on mount
   useEffect(() => {
     const loadedGroups = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
     const loadedTests = JSON.parse(localStorage.getItem(TESTS_KEY) || '[]');
@@ -55,7 +54,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Save data to localStorage whenever it changes
   useEffect(() => {
     if (!isLoading) {
       localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));

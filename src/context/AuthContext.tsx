@@ -12,6 +12,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USERS_STORAGE_KEY = 'edutest_users';
+const CURRENT_USER_KEY = 'edutest_current_user';
+
 const hashPassword = (password: string): string => {
   return btoa(password);
 };
@@ -21,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem(CURRENT_USER_KEY);
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -31,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, role: UserRole) => {
     setIsLoading(true);
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
       const hashedPassword = hashPassword(password);
       const foundUser = users.find((u: User & { password: string }) => 
         u.email === email && 
@@ -44,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const { password: _, ...userWithoutPassword } = foundUser;
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
       setUser(userWithoutPassword);
     } catch (error) {
       console.error('Login error:', error);
@@ -57,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, role: UserRole, institution: string, groupNumber: string) => {
     setIsLoading(true);
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
       
       if (users.some((u: User) => u.email === email)) {
         throw new Error('User with this email already exists');
@@ -90,10 +93,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       users.push(newUser);
-      localStorage.setItem('users', JSON.stringify(users));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
 
       const { password: _, ...userWithoutPassword } = newUser;
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
       setUser(userWithoutPassword);
     } catch (error) {
       console.error('Registration error:', error);
@@ -104,13 +107,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem(CURRENT_USER_KEY);
     setUser(null);
   };
 
   const updateProfile = async (updatedUser: User) => {
     try {
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
       const currentUser = users.find((u: User) => u.id === updatedUser.id);
       
       if (!currentUser) {
@@ -121,8 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         u.id === updatedUser.id ? { ...u, ...updatedUser, password: u.password } : u
       );
       
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
       setUser(updatedUser);
     } catch (error) {
       console.error('Error updating profile:', error);
