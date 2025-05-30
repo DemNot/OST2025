@@ -20,6 +20,15 @@ const TestCard: React.FC<TestCardProps> = ({ test }) => {
   const testAttempts = studentResults.filter(r => r.testId === test.id).length;
   const attemptsLeft = test.maxAttempts ? test.maxAttempts - testAttempts : undefined;
 
+  // Get the best score for this test
+  const bestResult = studentResults
+    .filter(r => r.testId === test.id)
+    .reduce((best, current) => {
+      const bestScore = best ? (best.score / best.maxScore) : 0;
+      const currentScore = current.score / current.maxScore;
+      return currentScore > bestScore ? current : best;
+    }, null);
+
   if (isTaking) {
     return <TestTaker test={test} onClose={() => setIsTaking(false)} attemptNumber={testAttempts + 1} />;
   }
@@ -83,6 +92,11 @@ const TestCard: React.FC<TestCardProps> = ({ test }) => {
           {testAttempts > 0 && (
             <span className="ml-2">
               • Выполнено попыток: {testAttempts}
+              {bestResult && (
+                <span className="ml-1">
+                  • Лучший результат: {((bestResult.score / bestResult.maxScore) * 100).toFixed(1)}%
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -109,4 +123,4 @@ const TestCard: React.FC<TestCardProps> = ({ test }) => {
   );
 };
 
-export default TestCard
+export default TestCard;

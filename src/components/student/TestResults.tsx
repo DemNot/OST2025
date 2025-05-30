@@ -33,6 +33,13 @@ const TestResults: React.FC<TestResultsProps> = ({ test, result }) => {
     gradeColor = 'text-red-600';
   }
 
+  const areArraysEqual = (arr1: string[], arr2: string[]): boolean => {
+    if (arr1.length !== arr2.length) return false;
+    const sorted1 = [...arr1].sort();
+    const sorted2 = [...arr2].sort();
+    return sorted1.every((value, index) => value === sorted2[index]);
+  };
+
   return (
     <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
       <div className="p-5">
@@ -92,8 +99,8 @@ const TestResults: React.FC<TestResultsProps> = ({ test, result }) => {
           <div className="space-y-4">
             {test.questions.map((question, index) => {
               const userAnswer = result.answers[question.id];
-              const isCorrect = Array.isArray(question.correctAnswer) 
-                ? JSON.stringify(userAnswer) === JSON.stringify(question.correctAnswer)
+              const isCorrect = question.type === 'multiple-choice' && Array.isArray(userAnswer) && Array.isArray(question.correctAnswer)
+                ? areArraysEqual(userAnswer, question.correctAnswer)
                 : userAnswer === question.correctAnswer;
 
               return (

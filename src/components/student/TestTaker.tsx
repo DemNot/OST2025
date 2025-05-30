@@ -150,7 +150,6 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose, attemptNumber }) =
         }
       } else if (question.type === 'multiple-choice') {
         if (Array.isArray(answer) && Array.isArray(question.correctAnswer)) {
-          // Compare arrays ignoring order
           if (areArraysEqual(answer, question.correctAnswer)) {
             score += 1;
           }
