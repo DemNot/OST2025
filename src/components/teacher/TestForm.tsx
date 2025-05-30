@@ -726,3 +726,5 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
     </div>
   );
 };
+
+export default TestForm
