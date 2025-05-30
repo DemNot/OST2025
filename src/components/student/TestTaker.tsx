@@ -347,5 +347,3 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose, attemptNumber }) =
 };
 
 export default TestTaker;
-
-export default TestTaker
