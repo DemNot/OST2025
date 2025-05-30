@@ -39,8 +39,8 @@ export interface Question {
   type: 'multiple-choice' | 'single-choice' | 'text';
   options?: string[];
   correctAnswer: string | string[];
-  alternativeAnswers?: string[]; // Added for text questions
-  randomizeOptions?: boolean; // Added for choice questions
+  alternativeAnswers?: string[];
+  randomizeOptions?: boolean;
 }
 
 export interface Test {
@@ -55,7 +55,8 @@ export interface Test {
   startDate: string;
   endDate: string;
   createdAt: string;
-  randomizeQuestions?: boolean; // Added for test settings
+  randomizeQuestions?: boolean;
+  maxAttempts?: number;
 }
 
 export interface TestResult {
@@ -66,4 +67,5 @@ export interface TestResult {
   score: number;
   maxScore: number;
   completedAt: string;
+  attemptNumber: number;
 }
