@@ -141,14 +141,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const studentUser = users.find(u => u.id === studentId);
     if (!studentUser || studentUser.role !== 'student') return [];
 
+    // Find all groups where the student's name matches exactly (case-insensitive)
     const studentGroups = groups.filter(group => 
       group.students.some(student => 
-        student.fullName.toLowerCase().trim() === studentUser.fullName.toLowerCase().trim() &&
-        group.institution.toLowerCase().trim() === studentUser.institution.toLowerCase().trim() &&
+        student.fullName.toLowerCase() === studentUser.fullName.toLowerCase() &&
+        group.institution.toLowerCase() === studentUser.institution.toLowerCase() &&
         group.groupNumber === studentUser.groupNumber
       )
     );
 
+    // Get all tests assigned to any of the student's groups
     const studentGroupIds = studentGroups.map(group => group.id);
     return tests.filter(test => 
       test.groupIds.some(groupId => studentGroupIds.includes(groupId))
@@ -174,8 +176,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return users.filter(u => 
       u.role === 'student' && 
       group.students.some(student => 
-        student.fullName.toLowerCase().trim() === u.fullName.toLowerCase().trim() &&
-        u.institution.toLowerCase().trim() === group.institution.toLowerCase().trim() &&
+        student.fullName.toLowerCase() === u.fullName.toLowerCase() &&
+        u.institution.toLowerCase() === group.institution.toLowerCase() &&
         u.groupNumber === group.groupNumber
       )
     );
