@@ -49,6 +49,15 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
     setQuestions(
       questions.map((q) => {
         if (q.id === questionId) {
+          if (field === 'type' && value === 'text') {
+            return { 
+              ...q, 
+              [field]: value,
+              options: undefined,
+              correctAnswer: '',
+              alternativeAnswers: []
+            };
+          }
           return { ...q, [field]: value };
         }
         return q;
@@ -130,6 +139,46 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
           }
           
           return { ...q, correctAnswer: newCorrectAnswers };
+        }
+        return q;
+      })
+    );
+  };
+
+  const handleAddAlternativeAnswer = (questionId: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.type === 'text') {
+          return {
+            ...q,
+            alternativeAnswers: [...(q.alternativeAnswers || []), '']
+          };
+        }
+        return q;
+      })
+    );
+  };
+
+  const handleAlternativeAnswerChange = (questionId: string, index: number, value: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.type === 'text' && q.alternativeAnswers) {
+          const newAlternativeAnswers = [...q.alternativeAnswers];
+          newAlternativeAnswers[index] = value;
+          return { ...q, alternativeAnswers: newAlternativeAnswers };
+        }
+        return q;
+      })
+    );
+  };
+
+  const handleRemoveAlternativeAnswer = (questionId: string, index: number) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.type === 'text' && q.alternativeAnswers) {
+          const newAlternativeAnswers = [...q.alternativeAnswers];
+          newAlternativeAnswers.splice(index, 1);
+          return { ...q, alternativeAnswers: newAlternativeAnswers };
         }
         return q;
       })
@@ -515,6 +564,43 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
                               required
                               placeholder="Введите правильный ответ"
                             />
+                            
+                            <div className="mt-4">
+                              <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                  Альтернативные варианты ответа
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddAlternativeAnswer(question.id)}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                                >
+                                  <Plus size={14} className="mr-1" />
+                                  Добавить вариант
+                                </button>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                {question.alternativeAnswers?.map((answer, index) => (
+                                  <div key={index} className="flex items-center space-x-2">
+                                    <input
+                                      type="text"
+                                      value={answer}
+                                      onChange={(e) => handleAlternativeAnswerChange(question.id, index, e.target.value)}
+                                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                      placeholder={`Альтернативный ответ ${index + 1}`}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveAlternativeAnswer(question.id, index)}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
