@@ -18,6 +18,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
   const [description, setDescription] = useState(test?.description || '');
   const [selectedGroups, setSelectedGroups] = useState<string[]>(test?.groupIds || []);
   const [timeLimit, setTimeLimit] = useState<number | undefined>(test?.timeLimit);
+  const [maxAttempts, setMaxAttempts] = useState<number | undefined>(test?.maxAttempts);
   const [startDate, setStartDate] = useState(test?.startDate || '');
   const [endDate, setEndDate] = useState(test?.endDate || '');
   const [questions, setQuestions] = useState<Question[]>(
@@ -238,6 +239,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
         groupIds: selectedGroups,
         questions,
         timeLimit: timeLimit || undefined,
+        maxAttempts: maxAttempts || undefined,
         startDate,
         endDate,
       });
@@ -250,6 +252,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
         groupIds: selectedGroups,
         questions,
         timeLimit: timeLimit || undefined,
+        maxAttempts: maxAttempts || undefined,
         startDate,
         endDate,
       });
@@ -383,6 +386,26 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
                     className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                     placeholder="Оставьте пустым, если нет ограничения"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="maxAttempts" className="block text-sm font-medium text-gray-700">
+                  Количество попыток
+                </label>
+                <div className="mt-1">
+                  <input
+                    type="number"
+                    id="maxAttempts"
+                    min="1"
+                    value={maxAttempts || ''}
+                    onChange={(e) => setMaxAttempts(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                    placeholder="Без ограничения"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">
+                    Оставьте пустым для неограниченного количества попыток
+                  </p>
                 </div>
               </div>
               
