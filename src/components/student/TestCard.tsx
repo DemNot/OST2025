@@ -108,3 +108,5 @@ const TestCard: React.FC<TestCardProps> = ({ test }) => {
     </div>
   );
 };
+
+export default TestCard
