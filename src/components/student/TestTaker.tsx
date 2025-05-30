@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Test, Question } from '../../types';
@@ -13,6 +13,33 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
   const { user } = useAuth();
   const { submitTestResult } = useData();
   
+  // Randomize questions if enabled
+  const randomizedQuestions = useMemo(() => {
+    const questions = [...test.questions];
+    if (test.randomizeQuestions) {
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+    }
+    return questions;
+  }, [test.questions, test.randomizeQuestions]);
+
+  // Randomize options for each question if enabled
+  const questionsWithRandomizedOptions = useMemo(() => {
+    return randomizedQuestions.map(question => {
+      if (question.type !== 'text' && question.options && question.randomizeOptions) {
+        const randomizedOptions = [...question.options];
+        for (let i = randomizedOptions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [randomizedOptions[i], randomizedOptions[j]] = [randomizedOptions[j], randomizedOptions[i]];
+        }
+        return { ...question, options: randomizedOptions };
+      }
+      return question;
+    });
+  }, [randomizedQuestions]);
+  
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [timeLeft, setTimeLeft] = useState(test.timeLimit ? test.timeLimit * 60 : null);
@@ -20,8 +47,8 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState<{ score: number; maxScore: number } | null>(null);
   
-  const currentQuestion = test.questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === test.questions.length - 1;
+  const currentQuestion = questionsWithRandomizedOptions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questionsWithRandomizedOptions.length - 1;
   
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || isSubmitted) return;
@@ -97,8 +124,15 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
       const answer = answers[question.id];
       
       if (question.type === 'text') {
-        if (typeof answer === 'string' && typeof question.correctAnswer === 'string') {
-          if (answer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase()) {
+        if (typeof answer === 'string') {
+          const normalizedAnswer = answer.trim().toLowerCase();
+          const correctAnswers = Array.isArray(question.correctAnswer) 
+            ? question.correctAnswer 
+            : [question.correctAnswer, ...(question.alternativeAnswers || [])];
+          
+          if (correctAnswers.some(correct => 
+            normalizedAnswer === (typeof correct === 'string' ? correct.trim().toLowerCase() : '')
+          )) {
             score += 1;
           }
         }
@@ -223,11 +257,11 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentQuestionIndex + 1) / test.questions.length) * 100}%` }}
+                  style={{ width: `${((currentQuestionIndex + 1) / questionsWithRandomizedOptions.length) * 100}%` }}
                 ></div>
               </div>
               <div className="mt-2 text-sm text-gray-500 text-right">
-                Вопрос {currentQuestionIndex + 1} из {test.questions.length}
+                Вопрос {currentQuestionIndex + 1} из {questionsWithRandomizedOptions.length}
               </div>
             </div>
             

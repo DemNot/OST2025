@@ -39,6 +39,8 @@ export interface Question {
   type: 'multiple-choice' | 'single-choice' | 'text';
   options?: string[];
   correctAnswer: string | string[];
+  alternativeAnswers?: string[]; // Added for text questions
+  randomizeOptions?: boolean; // Added for choice questions
 }
 
 export interface Test {
@@ -53,6 +55,7 @@ export interface Test {
   startDate: string;
   endDate: string;
   createdAt: string;
+  randomizeQuestions?: boolean; // Added for test settings
 }
 
 export interface TestResult {
