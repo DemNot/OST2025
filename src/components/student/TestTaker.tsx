@@ -7,9 +7,10 @@ import { ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle } from 'lucide-react
 interface TestTakerProps {
   test: Test;
   onClose: () => void;
+  attemptNumber: number;
 }
 
-const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
+const TestTaker: React.FC<TestTakerProps> = ({ test, onClose, attemptNumber }) => {
   const { user } = useAuth();
   const { submitTestResult } = useData();
   
@@ -172,6 +173,7 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
       answers,
       score: result.score,
       maxScore: result.maxScore,
+      attemptNumber,
     });
     
     setIsSubmitted(true);
@@ -345,3 +347,5 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose }) => {
 };
 
 export default TestTaker;
+
+export default TestTaker
