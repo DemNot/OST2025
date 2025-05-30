@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Test, Question } from '../../types';
-import { ArrowLeft, Save, Plus, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, HelpCircle, Shuffle } from 'lucide-react';
 
 interface TestFormProps {
   test: Test | null;
@@ -21,8 +21,12 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
   const [maxAttempts, setMaxAttempts] = useState<number | undefined>(test?.maxAttempts);
   const [startDate, setStartDate] = useState(test?.startDate || '');
   const [endDate, setEndDate] = useState(test?.endDate || '');
+  const [randomizeQuestions, setRandomizeQuestions] = useState(test?.randomizeQuestions || false);
   const [questions, setQuestions] = useState<Question[]>(
-    test?.questions || []
+    test?.questions.map(q => ({
+      ...q,
+      randomizeOptions: q.randomizeOptions || false
+    })) || []
   );
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +42,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
       type: 'single-choice',
       options: ['', ''],
       correctAnswer: '',
+      randomizeOptions: false,
     };
     setQuestions([...questions, newQuestion]);
   };
@@ -56,7 +61,8 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
               [field]: value,
               options: undefined,
               correctAnswer: '',
-              alternativeAnswers: []
+              alternativeAnswers: [],
+              randomizeOptions: false
             };
           }
           return { ...q, [field]: value };
@@ -186,6 +192,17 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
     );
   };
 
+  const handleToggleRandomizeOptions = (questionId: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.type !== 'text') {
+          return { ...q, randomizeOptions: !q.randomizeOptions };
+        }
+        return q;
+      })
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -242,6 +259,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
         maxAttempts: maxAttempts || undefined,
         startDate,
         endDate,
+        randomizeQuestions,
       });
     } else {
       createTest({
@@ -255,6 +273,7 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
         maxAttempts: maxAttempts || undefined,
         startDate,
         endDate,
+        randomizeQuestions,
       });
     }
     
@@ -408,6 +427,28 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
                   </p>
                 </div>
               </div>
+
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Настройки случайного порядка
+                  </label>
+                </div>
+                <div className="mt-2 space-y-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="randomizeQuestions"
+                      checked={randomizeQuestions}
+                      onChange={(e) => setRandomizeQuestions(e.target.checked)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="randomizeQuestions" className="ml-2 block text-sm text-gray-900">
+                      Перемешивать порядок вопросов для каждого студента
+                    </label>
+                  </div>
+                </div>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -516,14 +557,29 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
                               <label className="block text-sm font-medium text-gray-700">
                                 Варианты ответов
                               </label>
-                              <button
-                                type="button"
-                                onClick={() => handleAddOption(question.id)}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-700 hover:text-indigo-800 focus:outline-none"
-                              >
-                                <Plus size={14} className="mr-1" />
-                                Добавить вариант
-                              </button>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleRandomizeOptions(question.id)}
+                                  className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded ${
+                                    question.randomizeOptions
+                                      ? 'text-indigo-700 bg-indigo-100 hover:bg-indigo-200'
+                                      : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                                  }`}
+                                  title={question.randomizeOptions ? 'Отключить перемешивание' : 'Включить перемешивание'}
+                                >
+                                  <Shuffle size={14} className="mr-1" />
+                                  {question.randomizeOptions ? 'Перемешивать' : 'По порядку'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddOption(question.id)}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-700 hover:text-indigo-800 focus:outline-none"
+                                >
+                                  <Plus size={14} className="mr-1" />
+                                  Добавить вариант
+                                </button>
+                              </div>
                             </div>
                             
                             <div className="space-y-2">
@@ -670,5 +726,3 @@ const TestForm: React.FC<TestFormProps> = ({ test, onClose }) => {
     </div>
   );
 };
-
-export default TestForm;

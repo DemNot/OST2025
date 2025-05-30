@@ -58,14 +58,3 @@ export interface Test {
   randomizeQuestions?: boolean;
   maxAttempts?: number;
 }
-
-export interface TestResult {
-  id: string;
-  testId: string;
-  studentId: string;
-  answers: Record<string, string | string[]>;
-  score: number;
-  maxScore: number;
-  completedAt: string;
-  attemptNumber: number;
-}
