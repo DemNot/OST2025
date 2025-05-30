@@ -117,6 +117,13 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose, attemptNumber }) =
   const handleTextAnswerChange = (questionId: string, text: string) => {
     handleAnswer(questionId, text);
   };
+
+  const areArraysEqual = (arr1: string[], arr2: string[]): boolean => {
+    if (arr1.length !== arr2.length) return false;
+    const sorted1 = [...arr1].sort();
+    const sorted2 = [...arr2].sort();
+    return sorted1.every((value, index) => value === sorted2[index]);
+  };
   
   const calculateScore = (): { score: number; maxScore: number } => {
     let score = 0;
@@ -143,13 +150,8 @@ const TestTaker: React.FC<TestTakerProps> = ({ test, onClose, attemptNumber }) =
         }
       } else if (question.type === 'multiple-choice') {
         if (Array.isArray(answer) && Array.isArray(question.correctAnswer)) {
-          const sortedAnswer = [...answer].sort();
-          const sortedCorrect = [...question.correctAnswer].sort();
-          
-          if (
-            sortedAnswer.length === sortedCorrect.length &&
-            sortedAnswer.every((a, i) => a === sortedCorrect[i])
-          ) {
+          // Compare arrays ignoring order
+          if (areArraysEqual(answer, question.correctAnswer)) {
             score += 1;
           }
         }
